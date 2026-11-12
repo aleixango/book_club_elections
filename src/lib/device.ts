@@ -1,12 +1,23 @@
 /** Keeps --vvh in sync with the visual viewport so layouts shrink above the soft keyboard. */
 export function installViewportHeight() {
   const set = () => {
-    const h = window.visualViewport?.height ?? window.innerHeight;
-    document.documentElement.style.setProperty('--vvh', `${h}px`);
+    const vv = window.visualViewport;
+    // Pinch-zoom shrinks the visual viewport: only trust it at normal scale.
+    const h = vv && vv.scale <= 1.01 ? vv.height : window.innerHeight;
+    document.documentElement.style.setProperty('--vvh', `${Math.round(h)}px`);
+  };
+  // iOS Safari reports the old size for a moment after rotating: measure again once it settles.
+  const settle = () => {
+    set();
+    window.setTimeout(set, 250);
+    window.setTimeout(set, 700);
   };
   set();
   window.visualViewport?.addEventListener('resize', set);
   window.addEventListener('resize', set);
+  window.addEventListener('orientationchange', settle);
+  screen.orientation?.addEventListener?.('change', settle);
+  window.addEventListener('pageshow', settle);
 }
 
 export function haptic(pattern: number | number[] = 12) {

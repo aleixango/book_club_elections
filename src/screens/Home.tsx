@@ -27,17 +27,15 @@ export function HomeScreen({ onNew, onClub, onContinue, onHistory }: Props) {
           Club de lectura
         </motion.div>
         <motion.h1
-          className="display"
-          style={{ fontSize: 'clamp(40px, 8vw, 84px)', fontWeight: 500 }}
+          className="display home-title"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.7 }}
         >
-          El proper <em className="gold-text" style={{ fontWeight: 600 }}>llibre</em>
+          <span style={{ whiteSpace: 'nowrap' }}>El proper</span> <em className="gold-text" style={{ fontWeight: 600 }}>llibre</em>
         </motion.h1>
         <motion.p
-          className="muted"
-          style={{ margin: 0, maxWidth: 380 }}
+          className="muted home-desc"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -82,7 +80,7 @@ export function HomeScreen({ onNew, onClub, onContinue, onHistory }: Props) {
             </button>
           )}
         </motion.div>
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+        <p className="muted home-note">
           {session
             ? `Hi ha una votació en curs amb ${session.participants.length} participants.`
             : `${CLUB_PROPOSALS.length} llibres proposats pel club, a punt per votar.`}
@@ -100,7 +98,7 @@ export function HomeScreen({ onNew, onClub, onContinue, onHistory }: Props) {
             style={{ zIndex: 5 - Math.abs(i - 2), marginLeft: i ? -34 : 0 }}
           >
             <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }}>
-              <BookCover book={b} width="clamp(70px, 12vw, 130px)" eager />
+              <BookCover book={b} width="var(--home-book)" eager />
             </motion.div>
           </motion.div>
         ))}
