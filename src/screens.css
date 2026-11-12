@@ -564,7 +564,8 @@
   gap: clamp(8px, 1.6vw, 22px);
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 8px 10px 0;
+  /* Bottom room so fallen columns (translated down) keep their tag visible. */
+  padding: 8px 10px 20px;
   --podium-w: clamp(40px, calc((var(--vvh) - 230px) * 0.42), 96px);
 }
 
@@ -644,8 +645,8 @@
 }
 
 .tag-out {
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.06);
+  color: #f4ead8;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .crown {
@@ -821,4 +822,47 @@
   .card-title {
     font-size: 12.5px;
   }
+}
+
+/* ============ Setup mode switch ============ */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.segmented button {
+  position: relative;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.segmented button.on {
+  color: #2a1a10;
+}
+
+.segmented button > span:last-child {
+  position: relative;
+}
+
+.segmented-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--gold-2), var(--gold));
+}
+
+/* Shelf covers open the synopsis */
+.shelf-book {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
 }

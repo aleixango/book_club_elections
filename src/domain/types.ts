@@ -15,9 +15,14 @@ export interface Book {
   pages?: number;
   year?: string;
   isbn?: string;
-  source: 'google' | 'openlibrary';
+  genre?: string;
+  /** Original language (only for preloaded club books). */
+  language?: string;
+  source: 'google' | 'openlibrary' | 'club';
   /** Participant id of the proposer (only revealed at the end). */
   proposedBy?: string;
+  /** Proposer name when they are not among the voters (preloaded proposals). */
+  proposerName?: string;
 }
 
 export type TurnStep = 'spin' | 'handoff' | 'active' | 'curtain';
@@ -80,4 +85,6 @@ export interface Session {
   books: Book[];
   phase: Phase;
   log: RoundLog[];
+  /** Proposals were loaded from the club list instead of collected in the app. */
+  preloaded?: boolean;
 }

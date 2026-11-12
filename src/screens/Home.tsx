@@ -4,22 +4,18 @@ import { Screen } from '../components/Screen';
 import { BookCover } from '../components/BookCover';
 import { IconBooks, IconExpand } from '../components/icons';
 import { enterFullscreen, isStandalone } from '../lib/device';
+import { CLUB_PROPOSALS } from '../data/club';
 
-const DECOR = [
-  { title: 'Cien años de soledad', authors: ['G. García Márquez'] },
-  { title: 'La sombra del viento', authors: ['C. Ruiz Zafón'] },
-  { title: 'Rayuela', authors: ['Julio Cortázar'] },
-  { title: 'Nada', authors: ['Carmen Laforet'] },
-  { title: 'Pedro Páramo', authors: ['Juan Rulfo'] },
-];
+const DECOR = [0, 2, 6, 7, 10].map((i) => CLUB_PROPOSALS[i]);
 
 interface Props {
   onNew: () => void;
+  onClub: () => void;
   onContinue: () => void;
   onHistory: () => void;
 }
 
-export function HomeScreen({ onNew, onContinue, onHistory }: Props) {
+export function HomeScreen({ onNew, onClub, onContinue, onHistory }: Props) {
   const session = useStore((s) => s.session);
   const history = useStore((s) => s.history);
   const discard = useStore((s) => s.discard);
@@ -37,7 +33,7 @@ export function HomeScreen({ onNew, onContinue, onHistory }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.7 }}
         >
-          El próximo <em className="gold-text" style={{ fontWeight: 600 }}>libro</em>
+          El proper <em className="gold-text" style={{ fontWeight: 600 }}>llibre</em>
         </motion.h1>
         <motion.p
           className="muted"
@@ -46,29 +42,34 @@ export function HomeScreen({ onNew, onContinue, onHistory }: Props) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          Propuestas, rondas de voto secreto y una ruleta. Un solo móvil que pasa de mano en mano.
+          Propostes, rondes de vot secret i una ruleta. Un sol mòbil que passa de mà en mà.
         </motion.p>
 
         <motion.div className="home-actions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
           {session ? (
             <>
               <button className="btn btn-gold btn-lg" onClick={onContinue}>
-                Continuar votación
+                Continuar la votació
               </button>
               <button
                 className="btn btn-ghost"
                 onClick={() => {
                   discard();
-                  onNew();
+                  onClub();
                 }}
               >
-                Empezar de nuevo
+                Començar de nou
               </button>
             </>
           ) : (
-            <button className="btn btn-gold btn-lg" onClick={onNew}>
-              Nueva votación
-            </button>
+            <>
+              <button className="btn btn-gold btn-lg" onClick={onClub}>
+                Votar les propostes del club
+              </button>
+              <button className="btn btn-ghost" onClick={onNew}>
+                Nova votació
+              </button>
+            </>
           )}
           {history.length > 0 && (
             <button className="btn btn-ghost" onClick={onHistory}>
@@ -81,11 +82,11 @@ export function HomeScreen({ onNew, onContinue, onHistory }: Props) {
             </button>
           )}
         </motion.div>
-        {session && (
-          <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-            Hay una votación en curso con {session.participants.length} participantes.
-          </p>
-        )}
+        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+          {session
+            ? `Hi ha una votació en curs amb ${session.participants.length} participants.`
+            : `${CLUB_PROPOSALS.length} llibres proposats pel club, a punt per votar.`}
+        </p>
       </div>
 
       <div className="home-shelf" aria-hidden>
@@ -99,7 +100,7 @@ export function HomeScreen({ onNew, onContinue, onHistory }: Props) {
             style={{ zIndex: 5 - Math.abs(i - 2), marginLeft: i ? -34 : 0 }}
           >
             <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }}>
-              <BookCover book={b} width="clamp(70px, 12vw, 130px)" />
+              <BookCover book={b} width="clamp(70px, 12vw, 130px)" eager />
             </motion.div>
           </motion.div>
         ))}

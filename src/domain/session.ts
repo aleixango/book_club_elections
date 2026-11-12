@@ -19,12 +19,12 @@ export function normalizeName(name: string): string {
 
 export function validateNames(names: string[]): string | null {
   const clean = names.map(normalizeName).filter(Boolean);
-  if (clean.length < MIN_PARTICIPANTS) return `Hacen falta al menos ${MIN_PARTICIPANTS} participantes`;
-  if (clean.length > MAX_PARTICIPANTS) return `Máximo ${MAX_PARTICIPANTS} participantes`;
+  if (clean.length < MIN_PARTICIPANTS) return `Calen almenys ${MIN_PARTICIPANTS} participants`;
+  if (clean.length > MAX_PARTICIPANTS) return `Màxim ${MAX_PARTICIPANTS} participants`;
   const seen = new Set<string>();
   for (const n of clean) {
-    const k = n.toLocaleLowerCase('es');
-    if (seen.has(k)) return `«${n}» está repetido`;
+    const k = n.toLocaleLowerCase('ca');
+    if (seen.has(k)) return `«${n}» està repetit`;
     seen.add(k);
   }
   return null;
@@ -48,12 +48,37 @@ export function createSession(names: string[]): Session {
   };
 }
 
+export type PreloadedBook = Omit<Book, 'id' | 'source' | 'proposedBy' | 'proposerName'> & { proposer: string };
+
+/**
+ * Session whose proposals were gathered outside the app: it skips the proposal turns.
+ * Proposers are matched to voters by name; a proposer who does not vote keeps their name on the book.
+ */
+export function createPreloadedSession(names: string[], books: PreloadedBook[]): Session {
+  const base = createSession(names);
+  if (books.length === 0) fail('No hi ha cap llibre proposat');
+  const key = (n: string) => normalizeName(n).toLocaleLowerCase('ca');
+  const added: Book[] = [];
+  for (const { proposer, ...b } of books) {
+    const book: Book = { ...b, id: uid(), source: 'club' };
+    if (findDuplicate(book, added)) fail(`«${b.title}» està repetit`);
+    const voter = base.participants.find((p) => key(p.name) === key(proposer));
+    added.push(voter ? { ...book, proposedBy: voter.id } : { ...book, proposerName: normalizeName(proposer) });
+  }
+  return { ...base, books: added, phase: { kind: 'proposalsDone' }, preloaded: true };
+}
+
+/** Name of whoever proposed a book, whether or not they vote. */
+export function proposerOf(s: Session, book: Book): string | undefined {
+  return participantById(s, book.proposedBy)?.name ?? book.proposerName;
+}
+
 // ---------- turns (shared by proposals and voting) ----------
 
 type TurnPhase = Extract<Phase, { kind: 'proposals' | 'voting' }>;
 
 function turnPhase(s: Session): TurnPhase {
-  if (s.phase.kind !== 'proposals' && s.phase.kind !== 'voting') fail('No hay turnos en esta fase');
+  if (s.phase.kind !== 'proposals' && s.phase.kind !== 'voting') fail('En aquesta fase no hi ha torns');
   return s.phase;
 }
 
@@ -65,15 +90,15 @@ function withTurn(s: Session, turn: Turn): Session {
 /** The roulette landed on `participantId`. */
 export function pickTurn(s: Session, participantId: string): Session {
   const { turn } = turnPhase(s);
-  if (turn.step !== 'spin') fail('La ruleta no está activa');
-  if (!turn.remaining.includes(participantId)) fail('Ese participante ya ha tenido su turno');
+  if (turn.step !== 'spin') fail('La ruleta no està activa');
+  if (!turn.remaining.includes(participantId)) fail('Aquest participant ja ha tingut el seu torn');
   return withTurn(s, { ...turn, current: participantId, step: 'handoff' });
 }
 
 /** The chosen participant confirmed they hold the phone. */
 export function confirmIdentity(s: Session): Session {
   const { turn } = turnPhase(s);
-  if (turn.step !== 'handoff') fail('No hay traspaso pendiente');
+  if (turn.step !== 'handoff') fail('No hi ha cap traspàs pendent');
   return withTurn(s, { ...turn, step: 'active' });
 }
 
@@ -89,7 +114,7 @@ export function resumeTurn(s: Session): Session {
 export function endTurn(s: Session): Session {
   const p = turnPhase(s);
   const { turn } = p;
-  if (turn.step !== 'curtain' || !turn.current) fail('El turno no ha terminado');
+  if (turn.step !== 'curtain' || !turn.current) fail('El torn no ha acabat');
   const remaining = turn.remaining.filter((id) => id !== turn.current);
   if (remaining.length > 0) return withTurn(s, { remaining, current: null, step: 'spin' });
   if (p.kind === 'proposals') return { ...s, phase: { kind: 'proposalsDone' } };
@@ -104,13 +129,13 @@ export function duplicateOf(s: Session, book: Book, extra: Book[] = []): Book | 
 
 export function submitProposals(s: Session, books: Book[]): Session {
   const p = turnPhase(s);
-  if (p.kind !== 'proposals') fail('No estamos en la fase de propuestas');
+  if (p.kind !== 'proposals') fail('No som a la fase de propostes');
   const { turn } = p;
-  if (turn.step !== 'active' || !turn.current) fail('No es el turno de nadie');
-  if (books.length > MAX_PROPOSALS) fail(`Máximo ${MAX_PROPOSALS} propuestas`);
+  if (turn.step !== 'active' || !turn.current) fail('No és el torn de ningú');
+  if (books.length > MAX_PROPOSALS) fail(`Màxim ${MAX_PROPOSALS} propostes`);
   const added: Book[] = [];
   for (const b of books) {
-    if (findDuplicate(b, [...s.books, ...added])) fail(`«${b.title}» ya está propuesto`);
+    if (findDuplicate(b, [...s.books, ...added])) fail(`«${b.title}» ja està proposat`);
     added.push({ ...b, proposedBy: turn.current });
   }
   return {
@@ -132,26 +157,27 @@ function winner(s: Session, bookId: string, byRoulette: boolean): Session {
 
 /** Back to proposals when nobody proposed anything. */
 export function restartProposals(s: Session): Session {
-  if (s.phase.kind !== 'proposalsDone') fail('Las propuestas no han terminado');
+  if (s.phase.kind !== 'proposalsDone') fail('Les propostes no han acabat');
+  if (s.preloaded) fail('Les propostes ja venen carregades');
   return { ...s, phase: { kind: 'proposals', turn: newTurn(s.participants) } };
 }
 
 /** Candidates are shuffled so the order never hints at who proposed what. */
 export function startVoting(s: Session, rng: Rng = cryptoRng): Session {
-  if (s.phase.kind !== 'proposalsDone') fail('Las propuestas no han terminado');
+  if (s.phase.kind !== 'proposalsDone') fail('Les propostes no han acabat');
   const ids = shuffle(s.books.map((b) => b.id), rng);
-  if (ids.length === 0) fail('No hay ningún libro propuesto');
+  if (ids.length === 0) fail('No hi ha cap llibre proposat');
   if (ids.length === 1) return winner(s, ids[0], false);
   return startRound(s, firstRound(ids));
 }
 
 export function castVote(s: Session, bookIds: string[]): Session {
-  if (s.phase.kind !== 'voting') fail('No hay ninguna votación en curso');
+  if (s.phase.kind !== 'voting') fail('No hi ha cap votació en curs');
   const { round, turn } = s.phase;
-  if (turn.step !== 'active' || !turn.current) fail('No es el turno de nadie');
-  if (new Set(bookIds).size !== bookIds.length) fail('No se puede votar dos veces el mismo libro');
-  if (bookIds.length !== round.votesPerVoter) fail(`Hay que votar exactamente ${round.votesPerVoter}`);
-  for (const id of bookIds) if (!round.candidates.includes(id)) fail('Libro no válido en esta ronda');
+  if (turn.step !== 'active' || !turn.current) fail('No és el torn de ningú');
+  if (new Set(bookIds).size !== bookIds.length) fail('No es pot votar dues vegades el mateix llibre');
+  if (bookIds.length !== round.votesPerVoter) fail(`Cal votar exactament ${round.votesPerVoter}`);
+  for (const id of bookIds) if (!round.candidates.includes(id)) fail('Llibre no vàlid en aquesta ronda');
   const tally = { ...round.tally };
   for (const id of bookIds) tally[id] = (tally[id] ?? 0) + 1;
   return {
@@ -161,7 +187,7 @@ export function castVote(s: Session, bookIds: string[]): Session {
 }
 
 export function revealResults(s: Session): Session {
-  if (s.phase.kind !== 'roundEnd') fail('La ronda no ha terminado');
+  if (s.phase.kind !== 'roundEnd') fail('La ronda no ha acabat');
   const { round } = s.phase;
   return { ...s, phase: { kind: 'results', round, outcome: resolveRound(round) } };
 }
@@ -172,7 +198,7 @@ function nextFromSurvivors(s: Session, survivors: string[], number: number, byRo
 }
 
 export function continueAfterResults(s: Session): Session {
-  if (s.phase.kind !== 'results') fail('No hay resultados que continuar');
+  if (s.phase.kind !== 'results') fail('No hi ha resultats per continuar');
   const { round, outcome } = s.phase;
   switch (outcome.type) {
     case 'advance': {
@@ -189,7 +215,7 @@ export function continueAfterResults(s: Session): Session {
 }
 
 export function applyRoulette(s: Session, eliminated: string): Session {
-  if (s.phase.kind !== 'roulette') fail('La ruleta de libros no está activa');
+  if (s.phase.kind !== 'roulette') fail('La ruleta de llibres no està activa');
   const { round, outcome } = s.phase;
   const survivors = survivorsAfterRoulette(outcome, eliminated);
   const logged: Session = { ...s, log: [...s.log, { round, outcome, rouletteEliminated: eliminated }] };

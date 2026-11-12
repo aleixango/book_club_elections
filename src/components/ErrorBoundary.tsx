@@ -17,13 +17,13 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
     return (
       <div className="screen screen-center" style={{ gap: 14 }}>
         <h1 className="display" style={{ fontSize: 30 }}>
-          Algo ha fallado
+          Alguna cosa ha fallat
         </h1>
         <p className="muted" style={{ margin: 0, maxWidth: 420 }}>
-          Los votos y propuestas están guardados en este móvil. Recarga para continuar donde lo dejasteis.
+          Els vots i les propostes estan desats en aquest mòbil. Recarrega per continuar on ho vau deixar.
         </p>
         <button className="btn btn-gold btn-lg" onClick={() => location.reload()}>
-          Recargar
+          Recarregar
         </button>
       </div>
     );

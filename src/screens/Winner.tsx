@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import type { Session } from '../domain/types';
-import { bookById, participantById } from '../domain/session';
+import { bookById, proposerOf } from '../domain/session';
 import { roundLabel } from '../domain/rounds';
 import { useStore, type HistoryEntry } from '../store/session';
 import { BookCover } from '../components/BookCover';
@@ -24,7 +24,7 @@ interface Props {
 
 export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Props) {
   const book = bookById(session, bookId)!;
-  const proposer = participantById(session, book.proposedBy)?.name;
+  const proposer = proposerOf(session, book);
   const setError = useStore((s) => s.setError);
   const discard = useStore((s) => s.discard);
   const [sharing, setSharing] = useState(false);
@@ -44,9 +44,9 @@ export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Pro
     setSharing(true);
     try {
       const r = await shareWinner(book, proposer);
-      if (r === 'downloaded') setError('Imagen descargada');
+      if (r === 'downloaded') setError('Imatge descarregada');
     } catch {
-      setError('No se ha podido generar la imagen');
+      setError('No s’ha pogut generar la imatge');
     } finally {
       setSharing(false);
     }
@@ -71,7 +71,7 @@ export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Pro
         </div>
         <div className="winner-text">
           <motion.div className="eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-            Nuestro próximo libro
+            El nostre proper llibre
           </motion.div>
           <motion.h1
             className="display"
@@ -88,10 +88,10 @@ export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Pro
           <motion.div className="winner-meta" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.8 }}>
             {proposer && (
               <span className="badge" style={{ height: 28, fontSize: 13 }}>
-                Propuesto por <strong style={{ color: 'var(--paper)' }}>{proposer}</strong>
+                Proposat per <strong style={{ color: 'var(--paper)' }}>{proposer}</strong>
               </span>
             )}
-            {byRoulette && <span className="badge">Decidido por la ruleta</span>}
+            {byRoulette && <span className="badge">Decidit per la ruleta</span>}
           </motion.div>
           {path.length > 0 && (
             <motion.div className="path" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.1 }}>
@@ -108,7 +108,7 @@ export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Pro
               {sharing ? <span className="spinner" /> : <IconShare />} Compartir
             </button>
             <button className="btn btn-ghost" onClick={() => setAll(true)}>
-              <IconBooks /> Todas las propuestas
+              <IconBooks /> Totes les propostes
             </button>
             <HoldButton
               className="btn btn-ghost"
@@ -118,11 +118,11 @@ export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Pro
                 onNew();
               }}
             >
-              Nueva votación
+              Nova votació
             </HoldButton>
             <button
               className="icon-btn"
-              aria-label="Inicio"
+              aria-label="Inici"
               onClick={() => {
                 discard();
                 onHome();
@@ -136,6 +136,18 @@ export function WinnerScreen({ session, bookId, byRoulette, onNew, onHome }: Pro
       <AllProposals session={session} open={all} onClose={() => setAll(false)} winnerId={bookId} />
     </Screen>
   );
+}
+
+/** Voters (with or without proposals) plus proposers who did not vote. */
+function proposerGroups(session: Session): { name: string; books: Session['books'] }[] {
+  const groups = session.participants.map((p) => ({ name: p.name, books: session.books.filter((b) => b.proposedBy === p.id) }));
+  for (const b of session.books) {
+    if (b.proposedBy || !b.proposerName) continue;
+    const g = groups.find((x) => x.name === b.proposerName);
+    if (g) g.books.push(b);
+    else groups.push({ name: b.proposerName, books: [b] });
+  }
+  return groups;
 }
 
 function AllProposals({ session, open, onClose, winnerId }: { session: Session; open: boolean; onClose: () => void; winnerId: string }) {
@@ -153,20 +165,19 @@ function AllProposals({ session, open, onClose, winnerId }: { session: Session; 
           >
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <h3 className="display" style={{ fontSize: 20, flex: 1 }}>
-                Quién propuso qué
+                Qui va proposar què
               </h3>
-              <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+              <button className="icon-btn" onClick={onClose} aria-label="Tancar">
                 <IconX />
               </button>
             </div>
             <div className="strip" style={{ padding: '4px 2px 8px' }}>
-              {session.participants.map((p) => {
-                const books = session.books.filter((b) => b.proposedBy === p.id);
+              {proposerGroups(session).map(({ name, books }) => {
                 return (
-                  <div key={p.id} className="proposer-col">
-                    <div className="proposer-name">{p.name}</div>
+                  <div key={name} className="proposer-col">
+                    <div className="proposer-name">{name}</div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      {books.length === 0 && <span className="muted" style={{ fontSize: 12 }}>Sin propuestas</span>}
+                      {books.length === 0 && <span className="muted" style={{ fontSize: 12 }}>Sense propostes</span>}
                       {books.map((b) => (
                         <div key={b.id} className={b.id === winnerId ? 'proposer-win' : ''} title={b.title}>
                           <BookCover book={b} width={54} />
@@ -191,17 +202,17 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
     <Screen>
       <TopBar
         title="Historial"
-        sub={`${history.length} ${history.length === 1 ? 'libro' : 'libros'}`}
+        sub={`${history.length} ${history.length === 1 ? 'llibre' : 'llibres'}`}
         menu={false}
         right={
           <button className="btn btn-ghost btn-sm" onClick={onBack}>
-            <IconBack /> Inicio
+            <IconBack /> Inici
           </button>
         }
       />
       <div className="history">
         {history.length === 0 ? (
-          <div className="empty-hint muted">Aún no hay libros elegidos.</div>
+          <div className="empty-hint muted">Encara no s’ha escollit cap llibre.</div>
         ) : (
           <div className="strip" style={{ alignItems: 'flex-end', height: '100%' }}>
             {history.map((h: HistoryEntry, i) => (
@@ -215,7 +226,7 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
                 <BookCover book={h.book} width="var(--history-w)" />
                 <div style={{ width: 'var(--history-w)' }}>
                   <div className="card-title">{h.book.title}</div>
-                  <div className="card-author">{new Date(h.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                  <div className="card-author">{new Date(h.date).toLocaleDateString('ca-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                   {h.proposer && <div className="card-author">de {h.proposer}</div>}
                 </div>
               </motion.div>
@@ -226,7 +237,7 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
       {history.length > 0 && (
         <div className="footer" style={{ justifyContent: 'flex-end' }}>
           <HoldButton className="btn btn-ghost btn-sm" duration={1.2} onComplete={clear}>
-            Borrar historial
+            Esborrar l’historial
           </HoldButton>
         </div>
       )}

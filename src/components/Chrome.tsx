@@ -39,10 +39,10 @@ export function RotateOverlay() {
       <div className="rotate-phone" />
       <div>
         <h2 className="display" style={{ fontSize: 26 }}>
-          Gira el móvil
+          Gira el mòbil
         </h2>
         <p className="muted" style={{ marginTop: 8 }}>
-          Esta app se usa en horizontal.
+          Aquesta app es fa servir en horitzontal.
         </p>
       </div>
     </div>
@@ -97,7 +97,7 @@ export function TopBar({ title, sub, right, menu = true }: TopBarProps) {
         {sub && <div className="topbar-sub">· {sub}</div>}
         <div className="topbar-spacer" />
         {right}
-        <button className="icon-btn" onClick={() => setMuted(!muted)} aria-label={muted ? 'Activar sonido' : 'Silenciar'}>
+        <button className="icon-btn" onClick={() => setMuted(!muted)} aria-label={muted ? 'Activar el so' : 'Silenciar'}>
           {muted ? <IconMute /> : <IconSound />}
         </button>
         {menu && (
@@ -127,18 +127,18 @@ function SessionMenu({ open, onClose }: { open: boolean; onClose: () => void }) 
           >
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <h3 className="display" style={{ fontSize: 20, flex: 1 }}>
-                Abandonar la votación
+                Abandonar la votació
               </h3>
-              <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+              <button className="icon-btn" onClick={onClose} aria-label="Tancar">
                 <IconX />
               </button>
             </div>
             <p className="muted" style={{ margin: 0 }}>
-              Se perderán las propuestas y los votos de esta sesión. No se puede deshacer.
+              Es perdran les propostes i els vots d’aquesta sessió. No es pot desfer.
             </p>
             <HoldButton
               className="btn btn-wine"
-              hint="mantén pulsado"
+              hint="mantén premut"
               duration={1.2}
               onComplete={() => {
                 onClose();

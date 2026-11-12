@@ -1,8 +1,9 @@
 import { motion } from 'motion/react';
-import { useMemo } from 'react';
-import type { Session } from '../domain/types';
+import { useMemo, useState } from 'react';
+import type { Book, Session } from '../domain/types';
 import { useStore } from '../store/session';
 import { BookCover, hashString } from '../components/BookCover';
+import { BookSheet } from '../components/BookSheet';
 import { Screen } from '../components/Screen';
 import { TopBar } from '../components/Chrome';
 import { IconArrow } from '../components/icons';
@@ -10,6 +11,7 @@ import { IconArrow } from '../components/icons';
 export function ProposalsDoneScreen({ session }: { session: Session }) {
   const startVoting = useStore((s) => s.startVoting);
   const restart = useStore((s) => s.restartProposals);
+  const [detail, setDetail] = useState<Book | null>(null);
   const n = session.books.length;
 
   // Stable pseudo-random order: never the proposal (turn) order, which would hint at authorship.
@@ -24,18 +26,21 @@ export function ProposalsDoneScreen({ session }: { session: Session }) {
 
   const plan =
     n === 0
-      ? 'Nadie ha propuesto ningún libro.'
+      ? 'Ningú ha proposat cap llibre.'
       : n === 1
-        ? 'Solo hay un libro: será el elegido.'
+        ? 'Només hi ha un llibre: serà l’escollit.'
         : n === 2
-          ? 'Con dos libros vamos directos a la final.'
+          ? 'Amb dos llibres anem directes a la final.'
           : n === 3
-            ? 'Con tres libros empezamos en la ronda de 2 votos.'
-            : 'Primera ronda: cada uno vota 3 libros. Pasan los 3 más votados.';
+            ? 'Amb tres llibres comencem a la ronda de 2 vots.'
+            : 'Primera ronda: cadascú vota 3 llibres. Passen els 3 més votats.';
 
   return (
     <Screen>
-      <TopBar title="Propuestas cerradas" sub={`${n} ${n === 1 ? 'libro' : 'libros'}`} />
+      <TopBar
+        title={session.preloaded ? 'Propostes del club' : 'Propostes tancades'}
+        sub={`${n} ${n === 1 ? 'llibre' : 'llibres'}${n > 0 ? ' · toca una portada per llegir-ne la sinopsi' : ''}`}
+      />
       <div className="shelf-wrap">
         {n > 0 ? (
           <div className="shelves" style={{ '--rows': rows.length, '--per-row': perRow } as React.CSSProperties}>
@@ -44,15 +49,19 @@ export function ProposalsDoneScreen({ session }: { session: Session }) {
                 {row.map((b, j) => {
                   const i = r * perRow + j;
                   return (
-                    <motion.div
+                    <motion.button
+                      type="button"
                       key={b.id}
                       className="shelf-book"
                       initial={{ y: -220, rotate: (hashString(b.id) % 30) - 15, opacity: 0 }}
                       animate={{ y: 0, rotate: 0, opacity: 1 }}
+                      whileTap={{ scale: 0.95 }}
                       transition={{ type: 'spring', damping: 13, stiffness: 140, delay: 0.15 + i * 0.07 }}
+                      onClick={() => setDetail(b)}
+                      aria-label={b.title}
                     >
                       <BookCover book={b} width="var(--shelf-w)" eager />
-                    </motion.div>
+                    </motion.button>
                   );
                 })}
                 <div className="shelf-plank" />
@@ -60,7 +69,7 @@ export function ProposalsDoneScreen({ session }: { session: Session }) {
             ))}
           </div>
         ) : (
-          <div className="empty-hint muted">La estantería está vacía.</div>
+          <div className="empty-hint muted">La prestatgeria és buida.</div>
         )}
       </div>
       <div className="footer">
@@ -68,7 +77,7 @@ export function ProposalsDoneScreen({ session }: { session: Session }) {
         <div style={{ flex: 1 }} />
         {n === 0 ? (
           <button className="btn btn-gold btn-lg" onClick={restart}>
-            Volver a proponer
+            Tornar a proposar
           </button>
         ) : (
           <motion.button
@@ -78,10 +87,11 @@ export function ProposalsDoneScreen({ session }: { session: Session }) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 + n * 0.07 }}
           >
-            {n === 1 ? 'Ver el elegido' : '¡Empezar votación!'} <IconArrow />
+            {n === 1 ? 'Veure l’escollit' : 'Comencem la votació!'} <IconArrow />
           </motion.button>
         )}
       </div>
+      <BookSheet book={detail} onClose={() => setDetail(null)} />
     </Screen>
   );
 }

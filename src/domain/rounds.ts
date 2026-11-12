@@ -107,7 +107,7 @@ export function booksInPlay(round: Round): number {
 }
 
 export function roundLabel(round: Round): string {
-  if (round.rule === 'tiebreak') return booksInPlay(round) === 2 ? 'Desempate final' : 'Desempate';
+  if (round.rule === 'tiebreak') return booksInPlay(round) === 2 ? 'Desempat final' : 'Desempat';
   if (round.candidates.length === 2) return 'Final';
   return `Ronda ${round.number}`;
 }

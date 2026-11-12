@@ -47,18 +47,20 @@ export function BookSheet({ book, onClose }: Props) {
                     {book.title}
                   </h2>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    {book.authors.join(', ') || 'Autor desconocido'}
+                    {book.authors.join(', ') || 'Autor desconegut'}
                   </div>
                 </div>
-                <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+                <button className="icon-btn" onClick={onClose} aria-label="Tancar">
                   <IconX />
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {book.genre && <span className="badge">{book.genre}</span>}
                 {book.year && <span className="badge">{book.year}</span>}
-                {book.pages && <span className="badge">{book.pages} páginas</span>}
+                {book.pages && <span className="badge">{book.pages} pàgines</span>}
+                {book.language && <span className="badge">Original en {book.language}</span>}
               </div>
-              <p className="sheet-desc">{desc ?? 'Sin sinopsis disponible.'}</p>
+              <p className="sheet-desc">{desc ?? 'Sense sinopsi disponible.'}</p>
             </div>
           </motion.div>
         </motion.div>

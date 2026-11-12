@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'Club de Lectura · Votación',
+        name: 'Club de Lectura · Votació',
         short_name: 'Bookclub',
-        description: 'Elige el próximo libro del club por rondas de votación anónima.',
+        description: 'Trieu el proper llibre del club amb rondes de votació anònima.',
         lang: 'es',
         display: 'fullscreen',
         orientation: 'landscape',
@@ -28,7 +28,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>

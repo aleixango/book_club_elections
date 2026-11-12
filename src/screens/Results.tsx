@@ -40,10 +40,10 @@ export function RoundEndScreen({ round }: { round: Round }) {
         {roundLabel(round)}
       </div>
       <h1 className="display" style={{ fontSize: 'clamp(30px, 6vw, 54px)', margin: '6px 0 4px' }}>
-        Todos han votado
+        Tothom ha votat
       </h1>
       <p className="muted" style={{ margin: '0 0 20px' }}>
-        Reunid al grupo alrededor del móvil.
+        Reuniu el grup al voltant del mòbil.
       </p>
       <motion.button
         className="btn btn-gold btn-lg"
@@ -54,7 +54,7 @@ export function RoundEndScreen({ round }: { round: Round }) {
         animate={{ boxShadow: ['0 0 0 0 rgba(216,179,106,.5)', '0 0 0 18px rgba(216,179,106,0)'] }}
         transition={{ repeat: Infinity, duration: 1.6 }}
       >
-        Ver resultados
+        Veure els resultats
       </motion.button>
     </Screen>
   );
@@ -80,6 +80,9 @@ function Counter({ to, run }: { to: number; run: boolean }) {
   return <motion.span>{text}</motion.span>;
 }
 
+/** Catalan ordinal: 1r, 2n, 3r, 4t, 5è… */
+const ordinal = (n: number) => `${n}${n === 1 || n === 3 ? 'r' : n === 2 ? 'n' : n === 4 ? 't' : 'è'}`;
+
 function title(s: Session, id: string) {
   return `«${bookById(s, id)?.title ?? '?'}»`;
 }
@@ -87,39 +90,39 @@ function title(s: Session, id: string) {
 function outcomeCopy(s: Session, round: Round, o: Outcome): { headline: string; detail: string; cta: string } {
   if (o.type === 'advance') {
     if (o.passed.length === 1) {
-      return { headline: '¡Tenemos libro!', detail: `${title(s, o.passed[0])} gana la votación.`, cta: 'Ver al ganador' };
+      return { headline: 'Ja tenim llibre!', detail: `${title(s, o.passed[0])} guanya la votació.`, cta: 'Veure el guanyador' };
     }
-    const next = o.passed.length === 2 ? 'Ir a la final' : 'Siguiente ronda';
+    const next = o.passed.length === 2 ? 'Anar a la final' : 'Següent ronda';
     if (round.rule === 'top') {
       const tie = o.passed.length > round.advance;
       return {
-        headline: tie ? `Empate en el ${round.advance}.º puesto` : `Pasan ${o.passed.length} libros`,
+        headline: tie ? `Empat al ${ordinal(round.advance)} lloc` : `Passen ${o.passed.length} llibres`,
         detail: tie
-          ? `Pasan ${o.passed.length} libros. En la siguiente ronda pasarán ${o.passed.length - 1}.`
-          : `${o.eliminated.length} ${o.eliminated.length === 1 ? 'libro se queda' : 'libros se quedan'} fuera.`,
+          ? `Passen ${o.passed.length} llibres. A la ronda següent en passaran ${o.passed.length - 1}.`
+          : `${o.eliminated.length} ${o.eliminated.length === 1 ? 'llibre es queda' : 'llibres es queden'} fora.`,
         cta: next,
       };
     }
     return {
-      headline: round.rule === 'tiebreak' ? 'Desempate resuelto' : 'Un libro menos',
-      detail: `${title(s, o.eliminated[0])} queda eliminado.`,
+      headline: round.rule === 'tiebreak' ? 'Desempat resolt' : 'Un llibre menys',
+      detail: `${title(s, o.eliminated[0])} queda eliminat.`,
       cta: next,
     };
   }
   if (o.type === 'tiebreak') {
     const final = o.safe.length === 0 && o.tied.length === 2 && booksInPlay(round) === 2;
     return {
-      headline: final ? '¡Empate en la final!' : 'Empate en el corte',
+      headline: final ? 'Empat a la final!' : 'Empat al tall',
       detail: final
-        ? 'Se repite la votación entre los dos. Si vuelve a haber empate, decidirá la ruleta.'
-        : `${o.tied.length} libros empatados. Desempate a 1 voto: cae el menos votado.`,
-      cta: 'Ir al desempate',
+        ? 'Es repeteix la votació entre els dos. Si torna a haver-hi empat, decidirà la ruleta.'
+        : `${o.tied.length} llibres empatats. Desempat a 1 vot: cau el menys votat.`,
+      cta: 'Anar al desempat',
     };
   }
   return {
-    headline: 'Empate otra vez',
-    detail: 'Ya no se vuelve a votar: decide la ruleta.',
-    cta: 'Girar la ruleta',
+    headline: 'Empat un altre cop',
+    detail: 'Ja no es torna a votar: decideix la ruleta.',
+    cta: 'Fer girar la ruleta',
   };
 }
 
@@ -127,12 +130,20 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
   const next = useStore((s) => s.continueAfterResults);
   const ranked = useMemo(() => ranking(round), [round]);
   const max = Math.max(1, ...ranked.map((r) => r.votes));
-  // Reveal from last to first; eliminated books go fast, the podium slowly.
-  const order = useMemo(() => [...ranked].reverse(), [ranked]);
+  // The row keeps the (shuffled) candidate order so positions give nothing away.
+  const row = useMemo(() => round.candidates.map((id) => ({ id, votes: round.tally[id] ?? 0 })), [round]);
+  // Reveal order: eliminated books first (fewest votes first, each one falls), then the rest, fewest to most.
+  const order = useMemo(() => {
+    const group = (id: string) => ({ out: 0, tie: 1, pass: 2 })[statusOf(outcome, id)];
+    return [...ranked].reverse().sort((a, b) => group(a.id) - group(b.id));
+  }, [ranked, outcome]);
+  const outCount = useMemo(() => order.filter((o) => statusOf(outcome, o.id) === 'out').length, [order, outcome]);
   const [revealed, setRevealed] = useState(0);
   const done = revealed >= order.length;
+  const eliminating = revealed < outCount;
   const stripRef = useRef<HTMLDivElement>(null);
   const copy = outcomeCopy(session, round, outcome);
+  const isWinner = outcome.type === 'advance' && outcome.passed.length === 1;
 
   useEffect(() => {
     if (done) {
@@ -144,38 +155,44 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
     const item = order[revealed];
     const st = statusOf(outcome, item.id);
     const isTop = revealed === order.length - 1;
-    const delay = revealed === 0 ? 700 : st === 'out' ? 220 : isTop ? 1500 : 900;
+    // Each elimination is its own beat; quicker when many books fall.
+    const outDelay = Math.max(550, 1250 - outCount * 70);
+    const delay =
+      revealed === 0 ? 900 : st === 'out' ? outDelay : revealed === outCount ? 1400 : isTop ? 1500 : 900;
     const t = window.setTimeout(() => {
       setRevealed((r) => r + 1);
-      sfx.tick();
+      if (st === 'out') {
+        sfx.deselect();
+        haptic(12);
+      } else sfx.tick();
       // Keep the freshly revealed column visible.
       const el = stripRef.current?.querySelector<HTMLElement>(`[data-id="${item.id}"]`);
       el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }, delay);
     return () => window.clearTimeout(t);
-  }, [revealed, done, order, outcome]);
+  }, [revealed, done, order, outcome, outCount]);
 
   const isRevealed = (id: string) => order.findIndex((o) => o.id === id) < revealed;
   const safeOnly = round.rule === 'tiebreak' ? round.safe : [];
 
   return (
     <Screen>
-      <TopBar title={`Resultados · ${roundLabel(round)}`} sub={`${session.participants.length} votantes`} />
+      <TopBar title={`Resultats · ${roundLabel(round)}`} sub={`${session.participants.length} votants`} />
       <div className="results-wrap" onClick={() => !done && setRevealed(order.length)}>
         <div className="podium" ref={stripRef}>
-          {ranked.map((r, i) => {
+          {row.map((r) => {
             const b = bookById(session, r.id)!;
             const on = isRevealed(r.id);
             const st = statusOf(outcome, r.id);
-            const final = done ? st : 'pending';
+            const fallen = on && st === 'out';
             return (
               <motion.div
                 key={r.id}
                 data-id={r.id}
-                className={`podium-col ${final}`}
-                layout
-                animate={done && st === 'out' ? { y: 18, opacity: 0.38, filter: 'grayscale(1)' } : { y: 0, opacity: 1, filter: 'grayscale(0)' }}
-                transition={{ duration: 0.6 }}
+                className={`podium-col ${on ? st : 'pending'}`}
+                animate={fallen ? { y: 18, opacity: 0.5, filter: 'grayscale(1)' } : { y: 0, opacity: 1, filter: 'grayscale(0)' }}
+                // Show the count first, then drop.
+                transition={{ duration: 0.6, delay: fallen && !done ? 0.55 : 0 }}
               >
                 <div className="podium-votes">{on ? <Counter to={r.votes} run={on} /> : '·'}</div>
                 <motion.div
@@ -184,9 +201,7 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
                   transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <BookCover book={b} width="var(--podium-w)" eager />
-                  {done && st === 'pass' && i === 0 && outcome.type === 'advance' && outcome.passed.length === 1 && (
-                    <span className="crown">♛</span>
-                  )}
+                  {done && st === 'pass' && isWinner && <span className="crown">♛</span>}
                 </motion.div>
                 <div className="podium-bar-track">
                   <motion.div
@@ -197,15 +212,14 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
                   />
                 </div>
                 <div className="podium-tag">
-                  {done && (
-                    <motion.span initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className={`tag tag-${st}`}>
-                      {st === 'pass'
-                        ? outcome.type === 'advance' && outcome.passed.length === 1
-                          ? 'Gana'
-                          : 'Pasa'
-                        : st === 'tie'
-                          ? 'Empate'
-                          : 'Fuera'}
+                  {(fallen || done) && (
+                    <motion.span
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: fallen && !done ? 0.55 : 0 }}
+                      className={`tag tag-${st}`}
+                    >
+                      {st === 'pass' ? (isWinner ? 'Guanya' : 'Passa') : st === 'tie' ? 'Empat' : 'Fora'}
                     </motion.span>
                   )}
                 </div>
@@ -222,11 +236,13 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
             </strong>
             <span className="muted">
               {copy.detail}
-              {safeOnly.length > 0 && ` ${safeOnly.length === 1 ? 'Ya estaba clasificado' : 'Ya estaban clasificados'}: ${safeOnly.map((id) => title(session, id)).join(', ')}.`}
+              {safeOnly.length > 0 && ` ${safeOnly.length === 1 ? 'Ja estava classificat' : 'Ja estaven classificats'}: ${safeOnly.map((id) => title(session, id)).join(', ')}.`}
             </span>
           </motion.div>
         ) : (
-          <span className="muted">Revelando… toca para saltar</span>
+          <span className="muted">
+            {eliminating ? 'Es queden fora…' : outCount > 0 ? 'I els que continuen…' : 'Revelant…'} toca per saltar
+          </span>
         )}
         <div style={{ flex: 1 }} />
         <motion.button
@@ -259,21 +275,21 @@ export function BookRouletteScreen({ session, outcome }: { session: Session; out
 
   return (
     <Screen>
-      <TopBar title="La ruleta decide" sub={final ? 'el ganador' : 'quién queda eliminado'} />
+      <TopBar title="La ruleta decideix" sub={final ? 'el guanyador' : 'qui queda eliminat'} />
       <div className="spin-layout">
         <div className="spin-wheel">
           <Roulette items={items} onResult={onResult} size={size} />
         </div>
         <div className="spin-side">
-          <div className="eyebrow">Empate persistente</div>
+          <div className="eyebrow">Empat persistent</div>
           <h1 className="display" style={{ fontSize: 'clamp(24px, 4.2vw, 40px)' }}>
             {picked
               ? final
-                ? `¡${bookById(session, picked)?.title}!`
-                : `Cae ${title(session, picked)}`
+                ? `${bookById(session, picked)?.title}!`
+                : `Cau ${title(session, picked)}`
               : final
-                ? 'La suerte elige el ganador'
-                : 'La suerte elimina un libro'}
+                ? 'La sort tria el guanyador'
+                : 'La sort elimina un llibre'}
           </h1>
           <div className="roulette-books">
             {outcome.tied.map((id) => (

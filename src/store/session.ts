@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Book, Session } from '../domain/types';
 import * as S from '../domain/session';
-import { bookById, participantById } from '../domain/session';
+import { bookById, proposerOf } from '../domain/session';
 
 export interface HistoryEntry {
   id: string;
@@ -25,6 +25,8 @@ interface State {
   setMuted: (m: boolean) => void;
   setError: (e: string | null) => void;
   start: (names: string[]) => void;
+  /** Starts a session whose proposals were gathered outside the app. */
+  startWithProposals: (names: string[], books: S.PreloadedBook[]) => void;
   discard: () => void;
   pickTurn: (id: string) => void;
   confirmIdentity: () => void;
@@ -67,7 +69,7 @@ function recordWinner(session: Session, history: HistoryEntry[]): HistoryEntry[]
       id: session.id,
       date: Date.now(),
       book,
-      proposer: participantById(session, book.proposedBy)?.name,
+      proposer: proposerOf(session, book),
       participants: session.participants.length,
       books: session.books.length,
       byRoulette: session.phase.byRoulette,
@@ -99,9 +101,10 @@ export const useStore = create<State>()(
         error: null,
         setMuted: (muted) => set({ muted }),
         setError: (error) => set({ error }),
-        start: (names) => {
+        start: (names) => get().startWithProposals(names, []),
+        startWithProposals: (names, books) => {
           try {
-            const session = S.createSession(names);
+            const session = books.length ? S.createPreloadedSession(names, books) : S.createSession(names);
             set({ session, lastNames: session.participants.map((p) => p.name), error: null });
           } catch (e) {
             if (e instanceof S.SessionError) set({ error: e.message });

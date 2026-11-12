@@ -56,7 +56,7 @@ export function VoteScreen({ session, round, voterName, voterId }: Props) {
     }
     if (sel.length >= n) {
       sfx.error();
-      setError(`Ya has elegido ${n}. Toca uno para quitarlo.`);
+      setError(`Ja n’has triat ${n}. Toca’n un per treure’l.`);
       setShake(b.id);
       window.setTimeout(() => setShake(null), 450);
       return;
@@ -69,7 +69,7 @@ export function VoteScreen({ session, round, voterName, voterId }: Props) {
   const duel = books.length === 2;
   const label = roundLabel(round);
   const instruction =
-    round.rule === 'tiebreak' ? 'Elige 1 de los empatados' : n === 1 ? 'Elige tu favorito' : `Elige ${n} libros`;
+    round.rule === 'tiebreak' ? 'Tria 1 dels empatats' : n === 1 ? 'Tria el teu preferit' : `Tria ${n} llibres`;
 
   return (
     <Screen>
@@ -128,14 +128,14 @@ export function VoteScreen({ session, round, voterName, voterId }: Props) {
           ))}
         </div>
         <span className="muted" style={{ fontSize: 13 }}>
-          {selected.length < n ? `${n - selected.length} por elegir · mantén pulsada una portada para ver la sinopsis` : 'Listo para votar'}
+          {selected.length < n ? `${n - selected.length} per triar · mantén premuda una portada per veure’n la sinopsi` : 'A punt per votar'}
         </span>
         <div style={{ flex: 1 }} />
         <HoldButton
           disabled={selected.length !== n}
-          onDisabledPress={() => setError(n === 1 ? 'Elige un libro' : `Elige exactamente ${n} libros`)}
+          onDisabledPress={() => setError(n === 1 ? 'Tria un llibre' : `Tria exactament ${n} llibres`)}
           onComplete={() => castVote(selected)}
-          hint="mantén pulsado"
+          hint="mantén premut"
         >
           Votar
         </HoldButton>

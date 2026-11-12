@@ -6,7 +6,7 @@ import { roundLabel } from './domain/rounds';
 import type { Session } from './domain/types';
 import { Backdrop, RotateOverlay, Toast } from './components/Chrome';
 import { HomeScreen } from './screens/Home';
-import { SetupScreen } from './screens/Setup';
+import { SetupScreen, type SetupMode } from './screens/Setup';
 import { CurtainScreen, HandoffScreen, SpinScreen } from './screens/Turn';
 import { ProposalScreen } from './screens/Proposal';
 import { ProposalsDoneScreen } from './screens/ProposalsDone';
@@ -36,6 +36,11 @@ function sessionKey(s: Session): string {
 export default function App() {
   const session = useStore((s) => s.session);
   const [view, setView] = useState<View>('home');
+  const [setupMode, setSetupMode] = useState<SetupMode>('club');
+  const goSetup = (mode: SetupMode) => {
+    setSetupMode(mode);
+    setView('setup');
+  };
 
   useEffect(installWakeLock, []);
 
@@ -49,14 +54,21 @@ export default function App() {
   let key: string = view;
 
   if (view === 'home') {
-    screen = <HomeScreen onNew={() => setView('setup')} onContinue={() => setView('session')} onHistory={() => setView('history')} />;
+    screen = (
+      <HomeScreen
+        onNew={() => goSetup('new')}
+        onClub={() => goSetup('club')}
+        onContinue={() => setView('session')}
+        onHistory={() => setView('history')}
+      />
+    );
   } else if (view === 'setup') {
-    screen = <SetupScreen onBack={() => setView('home')} />;
+    screen = <SetupScreen mode={setupMode} onBack={() => setView('home')} />;
   } else if (view === 'history') {
     screen = <HistoryScreen onBack={() => setView('home')} />;
   } else if (session) {
     key = sessionKey(session);
-    screen = <SessionView session={session} onNew={() => setView('setup')} onHome={() => setView('home')} />;
+    screen = <SessionView session={session} onNew={() => goSetup(session.preloaded ? 'club' : 'new')} onHome={() => setView('home')} />;
   }
 
   return (
@@ -87,13 +99,13 @@ function SessionView({ session, onNew, onHome }: { session: Session; onNew: () =
       const { turn } = p;
       const who = participantById(session, turn.current);
       const isVote = p.kind === 'voting';
-      const title = isVote ? roundLabel(p.round) : 'Propuestas';
+      const title = isVote ? roundLabel(p.round) : 'Propostes';
       if (turn.step === 'spin' || !who) {
         return (
           <SpinScreen
             title={title}
-            sub={isVote ? `${p.round.votesPerVoter} ${p.round.votesPerVoter === 1 ? 'voto' : 'votos'} por persona` : 'hasta 3 libros cada uno'}
-            heading={isVote ? 'Siguiente votante' : 'Siguiente en proponer'}
+            sub={isVote ? `${p.round.votesPerVoter} ${p.round.votesPerVoter === 1 ? 'vot' : 'vots'} per persona` : 'fins a 3 llibres cadascú'}
+            heading={isVote ? 'Següent votant' : 'Següent a proposar'}
             participants={session.participants}
             remaining={turn.remaining}
             onPicked={s.pickTurn}
@@ -104,7 +116,7 @@ function SessionView({ session, onNew, onHome }: { session: Session; onNew: () =
         return (
           <HandoffScreen
             name={who.name}
-            action={isVote ? 'Tu voto es secreto: que nadie mire la pantalla.' : 'Vas a proponer hasta 3 libros.'}
+            action={isVote ? 'El teu vot és secret: que ningú miri la pantalla.' : 'Proposaràs fins a 3 llibres.'}
             onConfirm={s.confirmIdentity}
           />
         );
@@ -119,9 +131,9 @@ function SessionView({ session, onNew, onHome }: { session: Session; onNew: () =
       const last = turn.remaining.length === 1;
       return (
         <CurtainScreen
-          title={isVote ? 'Voto guardado' : 'Propuestas guardadas'}
-          text={last ? 'Eras el último. Devuelve el móvil al grupo.' : 'Devuelve el móvil al grupo.'}
-          button={last ? 'Continuar' : 'Siguiente turno'}
+          title={isVote ? 'Vot desat' : 'Propostes desades'}
+          text={last ? 'Era l’últim torn. Torna el mòbil al grup.' : 'Torna el mòbil al grup.'}
+          button={last ? 'Continuar' : 'Següent torn'}
           onNext={s.endTurn}
         />
       );

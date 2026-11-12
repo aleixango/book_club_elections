@@ -48,12 +48,12 @@ export function SpinScreen({ title, sub, heading, participants, remaining, onPic
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
               transition={{ type: 'spring', damping: 14 }}
             >
-              <div className="eyebrow">Último turno</div>
+              <div className="eyebrow">Últim torn</div>
               <div className="display gold-text" style={{ fontSize: size * 0.13 }}>
                 {items[0].label}
               </div>
               <button className="btn btn-gold" onClick={() => onPicked(items[0].id)}>
-                Adelante
+                Endavant
               </button>
             </motion.div>
           ) : (
@@ -63,10 +63,10 @@ export function SpinScreen({ title, sub, heading, participants, remaining, onPic
         <div className="spin-side">
           <div className="eyebrow">{heading}</div>
           <h1 className="display" style={{ fontSize: 'clamp(26px, 4.6vw, 44px)' }}>
-            {last ? 'Solo queda uno' : '¿A quién le toca?'}
+            {last ? 'Només en queda un' : 'A qui li toca?'}
           </h1>
           <p className="muted" style={{ margin: 0 }}>
-            {last ? 'Pásale el móvil.' : 'Pulsa el centro de la ruleta para elegir al azar.'}
+            {last ? 'Passa-li el mòbil.' : 'Prem el centre de la ruleta per triar a l’atzar.'}
           </p>
           <div className="spin-progress">
             <span>
@@ -109,15 +109,15 @@ export function HandoffScreen({ name, action, onConfirm }: HandoffProps) {
         <motion.div animate={{ x: [0, 14, 0] }} transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }} style={{ color: 'var(--gold)' }}>
           <IconHand width={36} height={36} />
         </motion.div>
-        <div className="eyebrow">Pasa el móvil a</div>
+        <div className="eyebrow">Passa el mòbil a</div>
         <h1 className="display gold-text" style={{ fontSize: 'clamp(44px, 10vw, 92px)', padding: '0 8px' }}>
           {name}
         </h1>
         <p className="muted" style={{ margin: '0 0 6px' }}>
           {action}
         </p>
-        <HoldButton onComplete={onConfirm} hint="mantén pulsado">
-          Soy {name}
+        <HoldButton onComplete={onConfirm} hint="mantén premut">
+          Soc {name}
         </HoldButton>
       </motion.div>
     </Screen>

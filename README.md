@@ -1,29 +1,34 @@
-# El próximo libro
+# El proper llibre
 
-App web (PWA) para elegir el siguiente libro del club de lectura con rondas de votación anónima, usando un único móvil en horizontal que pasa de mano en mano.
+App web (PWA) per triar el proper llibre del club de lectura amb rondes de votació anònima, fent servir un únic mòbil en horitzontal que passa de mà en mà.
 
-## Reglas
-- Cada participante propone hasta 3 libros (opcional). Los duplicados se rechazan sin revelar quién propuso el original.
-- **Ronda 1** (si hay 4+ libros): cada uno vota exactamente 3 libros distintos; pasan los 3 más votados y **todos los empatados en el corte** (pueden pasar 4, 5…).
-- **Rondas siguientes**: con *n* libros, cada uno vota *n − 1* y pasan *n − 1* (se elimina exactamente uno). Con 2 libros es la **Final** (1 voto).
-- **Empate en el corte (ronda 2 en adelante, incluida la final)**: desempate a 1 voto solo entre los empatados; si vuelve a empatar, decide la ruleta.
-- Con 3 libros se empieza en la ronda de 2 votos, con 2 en la final y con 1 hay ganador directo.
-- Solo se guarda el recuento por libro, nunca qué votó cada persona. La autoría se revela al final.
+## Regles
+- Cada participant proposa fins a 3 llibres (opcional). Els duplicats es rebutgen sense revelar qui va proposar l’original.
+- **Ronda 1** (si hi ha 4 llibres o més): cadascú vota exactament 3 llibres diferents; passen els 3 més votats i **tots els empatats al tall** (en poden passar 4, 5…).
+- **Rondes següents**: amb *n* llibres, cadascú en vota *n − 1* i en passen *n − 1* (se n’elimina exactament un). Amb 2 llibres és la **Final** (1 vot).
+- **Empat al tall (de la ronda 2 endavant, final inclosa)**: desempat a 1 vot només entre els empatats; si torna a haver-hi empat, decideix la ruleta.
+- Amb 3 llibres es comença a la ronda de 2 vots, amb 2 a la final i amb 1 hi ha guanyador directe.
+- Només es desa el recompte per llibre, mai què ha votat cada persona. L’autoria es revela al final.
 
-## Desarrollo
+## Propostes del club
+Les propostes ja recollides (portada, sinopsi, gènere, pàgines i proponent) són a [`src/data/club.ts`](src/data/club.ts) i les portades a `public/club/`. A l’inici, «Votar les propostes del club» crea la sessió amb aquests llibres i va directament a la votació. La llista de votants es pot editar abans de començar; si algú que ha proposat no vota, el seu llibre continua en joc i el seu nom apareix al final.
+
+Per a una votació futura, substitueix aquestes dades o fes servir «Nova votació», que recull les propostes amb el cercador.
+
+## Desenvolupament
 ```bash
 npm install
-npm run dev      # http://localhost:5173 (también accesible en la red local con --host)
-npm test         # tests de la lógica de rondas y empates
-npm run build    # genera dist/ (PWA con service worker)
+npm run dev      # http://localhost:5173 (també accessible a la xarxa local amb --host)
+npm test         # tests de la lògica de rondes, empats i propostes precarregades
+npm run build    # genera dist/ (PWA amb service worker)
 ```
 
-### Búsqueda de libros
-Usa Google Books y Open Library en paralelo. Sin clave, Google Books suele responder `429` (cuota compartida agotada) y se usa solo Open Library. Para activar Google Books, crea una API key gratuita en Google Cloud (Books API) y ponla en `.env.local`:
+### Cerca de llibres
+Fa servir Google Books i Open Library en paral·lel. Sense clau, Google Books sol respondre `429` (quota compartida esgotada) i només es fa servir Open Library. Per activar Google Books, crea una API key gratuïta a Google Cloud (Books API) i posa-la a `.env.local`:
 
 ```
-VITE_GOOGLE_BOOKS_KEY=tu_clave
+VITE_GOOGLE_BOOKS_KEY=la_teva_clau
 ```
 
-## Despliegue
-`dist/` es estático y usa rutas relativas, así que funciona en GitHub Pages, Netlify o cualquier hosting estático. Abre la URL en el móvil y usa «Añadir a pantalla de inicio» para tenerla a pantalla completa en horizontal.
+## Desplegament
+`dist/` és estàtic i fa servir rutes relatives, així que funciona a GitHub Pages, Netlify o qualsevol allotjament estàtic. Obre l’URL al mòbil i fes servir «Afegeix a la pantalla d’inici» per tenir-la a pantalla completa en horitzontal.

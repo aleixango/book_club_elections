@@ -49,7 +49,7 @@ export function ProposalScreen({ session, name }: Props) {
         .then((results) => setSearch({ kind: 'done', results }))
         .catch((e) => {
           if (ac.signal.aborted) return;
-          setSearch({ kind: 'error', message: e instanceof SearchError ? e.message : 'Error al buscar.' });
+          setSearch({ kind: 'error', message: e instanceof SearchError ? e.message : 'Error en la cerca.' });
         });
     }, 350);
     return () => {
@@ -71,9 +71,9 @@ export function ProposalScreen({ session, name }: Props) {
       sfx.deselect();
       return;
     }
-    if (duplicateOf(session, b)) return reject(b, 'Este libro ya está propuesto. Elige otro.');
-    if (duplicateOf({ ...session, books: [] }, b, draft)) return reject(b, 'Ya está en tu lista.');
-    if (draft.length >= MAX_PROPOSALS) return reject(b, `Ya tienes ${MAX_PROPOSALS}. Quita uno para cambiarlo.`);
+    if (duplicateOf(session, b)) return reject(b, 'Aquest llibre ja està proposat. Tria’n un altre.');
+    if (duplicateOf({ ...session, books: [] }, b, draft)) return reject(b, 'Ja és a la teva llista.');
+    if (draft.length >= MAX_PROPOSALS) return reject(b, `Ja en tens ${MAX_PROPOSALS}. Treu-ne un per canviar-lo.`);
     sfx.select();
     setDraft([...draft, b]);
     input.current?.blur();
@@ -85,7 +85,7 @@ export function ProposalScreen({ session, name }: Props) {
 
   return (
     <Screen className={kb ? 'kb' : ''}>
-      {!kb && <TopBar title="Propuestas" sub={`Turno de ${name}`} />}
+      {!kb && <TopBar title="Propostes" sub={`Torn de ${name}`} />}
       <div className="propose">
         <div className="propose-main">
           <div className="field">
@@ -98,7 +98,7 @@ export function ProposalScreen({ session, name }: Props) {
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="Busca por título, autor o ISBN…"
+              placeholder="Cerca per títol, autor o ISBN…"
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -107,7 +107,7 @@ export function ProposalScreen({ session, name }: Props) {
             />
             {search.kind === 'loading' && <span className="spinner" style={{ marginRight: 14 }} />}
             {query && search.kind !== 'loading' && (
-              <button className="icon-btn" onClick={() => setQuery('')} aria-label="Borrar" style={{ marginRight: 6 }}>
+              <button className="icon-btn" onClick={() => setQuery('')} aria-label="Esborrar" style={{ marginRight: 6 }}>
                 <IconX />
               </button>
             )}
@@ -117,8 +117,8 @@ export function ProposalScreen({ session, name }: Props) {
             {search.kind === 'idle' && (
               <div className="results-empty muted">
                 <IconSearch width={28} height={28} style={{ color: 'var(--gold-3)' }} />
-                Escribe para buscar en Google Books y Open Library.
-                <span style={{ fontSize: 12 }}>Mantén pulsada una portada para ver la sinopsis.</span>
+                Escriu per cercar a Google Books i Open Library.
+                <span style={{ fontSize: 12 }}>Mantén premuda una portada per veure’n la sinopsi.</span>
               </div>
             )}
             {search.kind === 'loading' && (
@@ -136,12 +136,12 @@ export function ProposalScreen({ session, name }: Props) {
               <div className="results-empty">
                 <span>{search.message}</span>
                 <button className="btn btn-ghost btn-sm" onClick={() => setRetry((r) => r + 1)}>
-                  Reintentar
+                  Torna-ho a provar
                 </button>
               </div>
             )}
             {search.kind === 'done' && search.results.length === 0 && (
-              <div className="results-empty muted">Sin resultados. Prueba con otro título o con el autor.</div>
+              <div className="results-empty muted">Cap resultat. Prova amb un altre títol o amb l’autor.</div>
             )}
             {search.kind === 'done' && search.results.length > 0 && (
               <div className="strip">
@@ -160,7 +160,7 @@ export function ProposalScreen({ session, name }: Props) {
                     >
                       {mine && <span className="check">✓</span>}
                       <BookCover book={b} width="var(--result-w)" className="result-cover" />
-                      {taken && <span className="badge badge-dim taken-badge">Ya propuesto</span>}
+                      {taken && <span className="badge badge-dim taken-badge">Ja proposat</span>}
                       {!kb && (
                         <div style={{ width: 'var(--result-w)' }}>
                           <div className="card-title">{b.title}</div>
@@ -180,7 +180,7 @@ export function ProposalScreen({ session, name }: Props) {
 
         {!kb && (
           <div className="propose-side">
-            <div className="eyebrow">Tus propuestas</div>
+            <div className="eyebrow">Les teves propostes</div>
             <div className="slots">
               {Array.from({ length: MAX_PROPOSALS }, (_, i) => {
                 const b = draft[i];
@@ -199,7 +199,7 @@ export function ProposalScreen({ session, name }: Props) {
                             sfx.deselect();
                             setDraft(draft.filter((d) => d.id !== b.id));
                           }}
-                          aria-label={`Quitar ${b.title}`}
+                          aria-label={`Treure ${b.title}`}
                         >
                           <BookCover book={b} width="100%" />
                           <span className="slot-x">
@@ -217,7 +217,7 @@ export function ProposalScreen({ session, name }: Props) {
               })}
             </div>
             <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Opcional. Nadie verá quién propuso cada libro hasta el final.
+              Opcional. Ningú veurà qui ha proposat cada llibre fins al final.
             </p>
           </div>
         )}
@@ -226,12 +226,12 @@ export function ProposalScreen({ session, name }: Props) {
       {!kb && (
         <div className="footer" style={{ justifyContent: 'flex-end' }}>
           {draft.length === 0 ? (
-            <HoldButton className="btn btn-ghost btn-lg" onComplete={() => submit([])} hint="mantén pulsado">
-              No propongo nada
+            <HoldButton className="btn btn-ghost btn-lg" onComplete={() => submit([])} hint="mantén premut">
+              No proposo res
             </HoldButton>
           ) : (
-            <HoldButton onComplete={() => submit(draft)} hint="mantén pulsado para guardar">
-              Proponer {draft.length} {draft.length === 1 ? 'libro' : 'libros'}
+            <HoldButton onComplete={() => submit(draft)} hint="mantén premut per desar">
+              Proposar {draft.length} {draft.length === 1 ? 'llibre' : 'llibres'}
             </HoldButton>
           )}
         </div>

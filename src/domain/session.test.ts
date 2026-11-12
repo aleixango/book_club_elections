@@ -5,9 +5,12 @@ import {
   castVote,
   confirmIdentity,
   continueAfterResults,
+  createPreloadedSession,
   createSession,
   endTurn,
   pickTurn,
+  proposerOf,
+  restartProposals,
   resumeTurn,
   revealResults,
   SessionError,
@@ -66,10 +69,10 @@ const names4 = ['Ana', 'Bea', 'Carles', 'Dani'];
 
 describe('participants', () => {
   it('validates names', () => {
-    expect(validateNames(['Ana'])).toMatch(/al menos/);
-    expect(validateNames(['Ana', ' ana '])).toMatch(/repetido/);
+    expect(validateNames(['Ana'])).toMatch(/almenys/);
+    expect(validateNames(['Ana', ' ana '])).toMatch(/repetit/);
     expect(validateNames(['Ana', 'Bea'])).toBeNull();
-    expect(validateNames(Array.from({ length: 16 }, (_, i) => `P${i}`))).toMatch(/Máximo/);
+    expect(validateNames(Array.from({ length: 16 }, (_, i) => `P${i}`))).toMatch(/Màxim/);
   });
 });
 
@@ -88,7 +91,7 @@ describe('proposals', () => {
   it('allows skipping and limits to 3', () => {
     let s = createSession(['Ana', 'Bea']);
     s = confirmIdentity(pickTurn(s, s.participants[0].id));
-    expect(() => submitProposals(s, [book('1'), book('2'), book('3'), book('4')])).toThrow(/Máximo/);
+    expect(() => submitProposals(s, [book('1'), book('2'), book('3'), book('4')])).toThrow(/Màxim/);
     s = submitProposals(s, []);
     expect(s.books).toHaveLength(0);
   });
@@ -139,9 +142,9 @@ describe('ballot validation', () => {
   it('requires exactly N distinct candidates', () => {
     let s = startVoting(withProposals(names4, [[book('a'), book('b')], [book('c'), book('d')], [book('e')]]));
     s = confirmIdentity(pickTurn(s, s.participants[0].id));
-    expect(() => castVote(s, ['a', 'b'])).toThrow(/exactamente 3/);
-    expect(() => castVote(s, ['a', 'a', 'b'])).toThrow(/dos veces/);
-    expect(() => castVote(s, ['a', 'b', 'zzz'])).toThrow(/no válido/);
+    expect(() => castVote(s, ['a', 'b'])).toThrow(/exactament 3/);
+    expect(() => castVote(s, ['a', 'a', 'b'])).toThrow(/dues vegades/);
+    expect(() => castVote(s, ['a', 'b', 'zzz'])).toThrow(/no vàlid/);
     expect(() => castVote(s, ['a', 'b', 'c'])).not.toThrow();
   });
 
@@ -243,7 +246,7 @@ describe('ties', () => {
     s = voteRound(s, [['a'], ['b'], ['a'], ['b']]);
     expect(outcome(s)).toEqual({ type: 'tiebreak', safe: [], tied: ['a', 'b'] });
     s = continueAfterResults(s);
-    expect(roundLabel(currentRound(s))).toBe('Desempate final');
+    expect(roundLabel(currentRound(s))).toBe('Desempat final');
     s = voteRound(s, [['a'], ['b'], ['a'], ['b']]);
     expect(outcome(s).type).toBe('roulette');
     s = applyRoulette(continueAfterResults(s), 'a');
@@ -295,5 +298,46 @@ describe('ties', () => {
       }
     }
     expect(s.phase.kind).toBe('winner');
+  });
+});
+
+describe('preloaded proposals', () => {
+  const club = [
+    { proposer: 'Adrià', title: 'Confesiones', authors: ['Kanae Minato'] },
+    { proposer: 'adrià ', title: 'El imperio del sol', authors: ['J. G. Ballard'] },
+    { proposer: 'Gràcia', title: 'El club del crim dels dijous', authors: ['Richard Osman'] },
+    { proposer: 'Aleix', title: 'Un mundo feliz', authors: ['Aldous Huxley'] },
+  ];
+
+  it('skips the proposal turns and goes straight to the summary', () => {
+    const s = createPreloadedSession(['Adrià', 'Aleix', 'Marta'], club);
+    expect(s.phase.kind).toBe('proposalsDone');
+    expect(s.preloaded).toBe(true);
+    expect(s.books).toHaveLength(4);
+    expect(new Set(s.books.map((b) => b.id)).size).toBe(4);
+    expect(s.books.every((b) => b.source === 'club')).toBe(true);
+  });
+
+  it('links proposers to voters by name, keeping the name of proposers who do not vote', () => {
+    const s = createPreloadedSession(['Adrià', 'Aleix', 'Marta'], club);
+    const adria = s.participants.find((p) => p.name === 'Adrià')!;
+    expect(s.books.filter((b) => b.proposedBy === adria.id)).toHaveLength(2);
+    const osman = s.books.find((b) => b.title.startsWith('El club'))!;
+    expect(osman.proposedBy).toBeUndefined();
+    expect(proposerOf(s, osman)).toBe('Gràcia');
+    expect(proposerOf(s, s.books.find((b) => b.title === 'Un mundo feliz')!)).toBe('Aleix');
+  });
+
+  it('votes like any other session and cannot go back to proposals', () => {
+    let s = createPreloadedSession(['Adrià', 'Aleix'], club);
+    expect(() => restartProposals(s)).toThrow(SessionError);
+    s = startVoting(s);
+    expect(s.phase.kind).toBe('voting');
+    if (s.phase.kind === 'voting') expect(s.phase.round.votesPerVoter).toBe(3);
+  });
+
+  it('rejects duplicated books and empty lists', () => {
+    expect(() => createPreloadedSession(['A', 'B'], [...club, { ...club[0], proposer: 'B' }])).toThrow(/repetit/);
+    expect(() => createPreloadedSession(['A', 'B'], [])).toThrow(SessionError);
   });
 });

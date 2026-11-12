@@ -124,7 +124,7 @@ export async function searchBooks(query: string, signal: AbortSignal): Promise<B
   const [g, o] = await Promise.allSettled([searchGoogle(q, signal), searchOpenLibrary(q, signal)]);
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
   if (g.status === 'rejected' && o.status === 'rejected') {
-    throw new SearchError(navigator.onLine ? 'No se ha podido buscar. Inténtalo de nuevo.' : 'Sin conexión a internet.');
+    throw new SearchError(navigator.onLine ? 'No s’ha pogut fer la cerca. Torna-ho a provar.' : 'Sense connexió a internet.');
   }
   return merge(g.status === 'fulfilled' ? g.value : [], o.status === 'fulfilled' ? o.value : []);
 }

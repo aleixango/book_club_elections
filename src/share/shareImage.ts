@@ -134,7 +134,7 @@ export async function renderShareImage(book: Book, proposer?: string): Promise<B
   ctx.fillStyle = '#d8b36a';
   ctx.font = '600 20px Inter, sans-serif';
   ctx.letterSpacing = '6px';
-  ctx.fillText('NUESTRO PRÓXIMO LIBRO', tx, 150);
+  ctx.fillText('EL NOSTRE PROPER LLIBRE', tx, 150);
   ctx.letterSpacing = '0px';
 
   ctx.fillStyle = '#f4ead8';
@@ -156,8 +156,8 @@ export async function renderShareImage(book: Book, proposer?: string): Promise<B
 
   ctx.fillStyle = '#a3907f';
   ctx.font = '500 22px Inter, sans-serif';
-  const date = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-  ctx.fillText(proposer ? `Propuesto por ${proposer} · ${date}` : date, tx, y);
+  const date = new Date().toLocaleDateString('ca-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  ctx.fillText(proposer ? `Proposat per ${proposer} · ${date}` : date, tx, y);
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('blob'))), 'image/png'));
 }
@@ -165,8 +165,8 @@ export async function renderShareImage(book: Book, proposer?: string): Promise<B
 /** Shares via the Web Share API, falling back to a download. */
 export async function shareWinner(book: Book, proposer?: string): Promise<'shared' | 'downloaded' | 'cancelled'> {
   const blob = await renderShareImage(book, proposer);
-  const file = new File([blob], 'proximo-libro.png', { type: 'image/png' });
-  const text = `📚 Nuestro próximo libro: «${book.title}»${book.authors[0] ? ` de ${book.authors[0]}` : ''}`;
+  const file = new File([blob], 'proper-llibre.png', { type: 'image/png' });
+  const text = `📚 El nostre proper llibre: «${book.title}»${book.authors[0] ? ` de ${book.authors[0]}` : ''}`;
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text });
