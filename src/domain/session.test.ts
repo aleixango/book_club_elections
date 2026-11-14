@@ -8,12 +8,14 @@ import {
   createPreloadedSession,
   createSession,
   endTurn,
+  finishReview,
   pickTurn,
   proposerOf,
   restartProposals,
   resumeTurn,
   revealResults,
   SessionError,
+  setProposals,
   startVoting as startVotingRaw,
   submitProposals,
   validateNames,
@@ -309,9 +311,10 @@ describe('preloaded proposals', () => {
     { proposer: 'Aleix', title: 'Un mundo feliz', authors: ['Aldous Huxley'] },
   ];
 
-  it('skips the proposal turns and goes straight to the summary', () => {
+  it('skips the proposal turns and starts with the review', () => {
     const s = createPreloadedSession(['Adrià', 'Aleix', 'Marta'], club);
-    expect(s.phase.kind).toBe('proposalsDone');
+    expect(s.phase.kind).toBe('review');
+    expect(finishReview(s).phase.kind).toBe('proposalsDone');
     expect(s.preloaded).toBe(true);
     expect(s.books).toHaveLength(4);
     expect(new Set(s.books.map((b) => b.id)).size).toBe(4);
@@ -329,7 +332,7 @@ describe('preloaded proposals', () => {
   });
 
   it('votes like any other session and cannot go back to proposals', () => {
-    let s = createPreloadedSession(['Adrià', 'Aleix'], club);
+    let s = finishReview(createPreloadedSession(['Adrià', 'Aleix'], club));
     expect(() => restartProposals(s)).toThrow(SessionError);
     s = startVoting(s);
     expect(s.phase.kind).toBe('voting');
@@ -339,5 +342,48 @@ describe('preloaded proposals', () => {
   it('rejects duplicated books and empty lists', () => {
     expect(() => createPreloadedSession(['A', 'B'], [...club, { ...club[0], proposer: 'B' }])).toThrow(/repetit/);
     expect(() => createPreloadedSession(['A', 'B'], [])).toThrow(SessionError);
+  });
+
+  describe('review', () => {
+    const start = () => createPreloadedSession(['Adrià', 'Aleix', 'Marta'], club);
+    const who = (s: Session, name: string) => s.participants.find((p) => p.name === name)!.id;
+
+    it('replaces only that participant’s books, keeping the rest in place', () => {
+      let s = start();
+      const adria = who(s, 'Adrià');
+      const keep = s.books.filter((b) => b.proposedBy !== adria).map((b) => b.id);
+      s = setProposals(s, adria, [book('n1', 'Nou llibre')]);
+      const mine = s.books.filter((b) => b.proposedBy === adria);
+      expect(mine.map((b) => b.title)).toEqual(['Nou llibre']);
+      expect(s.books.filter((b) => b.proposedBy !== adria).map((b) => b.id)).toEqual(keep);
+      expect(s.books[0].title).toBe('Nou llibre');
+      expect(s.phase.kind).toBe('review');
+    });
+
+    it('lets a new participant add up to 3 books', () => {
+      let s = start();
+      const marta = who(s, 'Marta');
+      s = setProposals(s, marta, [book('a'), book('b'), book('c')]);
+      expect(s.books.filter((b) => b.proposedBy === marta)).toHaveLength(3);
+      expect(s.books).toHaveLength(7);
+      expect(() => setProposals(s, marta, [book('a'), book('b'), book('c'), book('d')])).toThrow(/Màxim/);
+    });
+
+    it('rejects books proposed by someone else, but allows re-saving your own', () => {
+      const s = start();
+      const aleix = who(s, 'Aleix');
+      const adria = who(s, 'Adrià');
+      const confes = s.books.find((b) => b.title === 'Confesiones')!;
+      expect(() => setProposals(s, aleix, [{ ...confes, id: 'x' }])).toThrow(/ja està proposat/);
+      const own = s.books.filter((b) => b.proposedBy === adria);
+      expect(setProposals(s, adria, own).books).toHaveLength(4);
+    });
+
+    it('only works during the review', () => {
+      const s = finishReview(start());
+      expect(() => setProposals(s, who(s, 'Marta'), [book('a')])).toThrow(SessionError);
+      expect(() => finishReview(s)).toThrow(SessionError);
+      expect(() => setProposals(start(), 'nobody', [])).toThrow(SessionError);
+    });
   });
 });

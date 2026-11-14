@@ -10,6 +10,7 @@ import { SetupScreen, type SetupMode } from './screens/Setup';
 import { CurtainScreen, HandoffScreen, SpinScreen } from './screens/Turn';
 import { ProposalScreen } from './screens/Proposal';
 import { ProposalsDoneScreen } from './screens/ProposalsDone';
+import { ReviewScreen } from './screens/Review';
 import { VoteScreen } from './screens/Vote';
 import { BookRouletteScreen, ResultsScreen, RoundEndScreen } from './screens/Results';
 import { HistoryScreen, WinnerScreen } from './screens/Winner';
@@ -125,7 +126,7 @@ function SessionView({ session, onNew, onHome }: { session: Session; onNew: () =
         return isVote ? (
           <VoteScreen session={session} round={p.round} voterName={who.name} voterId={who.id} />
         ) : (
-          <ProposalScreen session={session} name={who.name} />
+          <ProposalScreen session={session} sub={`Torn de ${who.name}`} onSave={s.submitProposals} />
         );
       }
       const last = turn.remaining.length === 1;
@@ -138,6 +139,8 @@ function SessionView({ session, onNew, onHome }: { session: Session; onNew: () =
         />
       );
     }
+    case 'review':
+      return <ReviewScreen session={session} />;
     case 'proposalsDone':
       return <ProposalsDoneScreen session={session} />;
     case 'roundEnd':

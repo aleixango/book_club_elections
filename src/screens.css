@@ -582,22 +582,21 @@
   display: flex;
   align-items: stretch;
   overflow: hidden;
+  container-type: inline-size;
 }
 
+/* Every column fits on screen: the width is limited by the height and by the number of books. */
 .podium {
   width: 100%;
   display: flex;
-  justify-content: safe center;
-  gap: clamp(8px, 1.6vw, 22px);
-  overflow-x: auto;
-  scrollbar-width: none;
-  /* Bottom room so fallen columns (translated down) keep their tag visible. */
-  padding: 8px 10px 20px;
-  --podium-w: clamp(40px, calc((var(--vvh) - 230px) * 0.42), 96px);
-}
-
-.podium::-webkit-scrollbar {
-  display: none;
+  justify-content: center;
+  --podium-gap: clamp(6px, 1.6vw, 22px);
+  gap: var(--podium-gap);
+  padding: 8px 10px 12px;
+  --podium-w: min(
+    clamp(30px, calc((var(--vvh) - 230px) * 0.42), 96px),
+    calc((100cqi - 20px - (var(--n) - 1) * var(--podium-gap)) / var(--n))
+  );
 }
 
 .podium-col {
@@ -612,7 +611,7 @@
 .podium-votes {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(16px, 2.6vw, 26px);
+  font-size: clamp(14px, 2.6vw, 26px);
   color: var(--gold-2);
   font-variant-numeric: tabular-nums;
   height: 1.2em;
@@ -913,4 +912,79 @@
   .home-note {
     display: none;
   }
+}
+
+/* ============ Review (preloaded proposals) ============ */
+.review {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: clamp(6px, 1.4vw, 14px);
+  padding: 4px 0;
+  /* Cover width: three per card, limited by the card height and width. */
+  --rv-w: max(
+    18px,
+    min(
+      calc(((var(--vvh) - 130px) / var(--rows) - 48px) * 0.667),
+      calc(((100vw - 2 * var(--pad)) / var(--cols) - 40px) / 3),
+      84px
+    )
+  );
+}
+
+.review-card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px 8px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  text-align: left;
+  overflow: hidden;
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-head .chip-avatar {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+
+.review-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.review-books {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.review-empty {
+  width: var(--rv-w);
+  aspect-ratio: 2 / 3;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 3px 7px 7px 3px;
+  border: 1.5px dashed var(--line-2);
+  color: var(--gold-3);
+  font-family: var(--font-display);
+  font-size: 18px;
 }

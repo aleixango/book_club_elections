@@ -65,7 +65,30 @@ export function createPreloadedSession(names: string[], books: PreloadedBook[]):
     const voter = base.participants.find((p) => key(p.name) === key(proposer));
     added.push(voter ? { ...book, proposedBy: voter.id } : { ...book, proposerName: normalizeName(proposer) });
   }
-  return { ...base, books: added, phase: { kind: 'proposalsDone' }, preloaded: true };
+  return { ...base, books: added, phase: { kind: 'review' }, preloaded: true };
+}
+
+/** Replaces one participant's proposals during the review of preloaded proposals. */
+export function setProposals(s: Session, participantId: string, books: Book[]): Session {
+  if (s.phase.kind !== 'review') fail('No som a la revisió de propostes');
+  if (!participantById(s, participantId)) fail('Participant desconegut');
+  if (books.length > MAX_PROPOSALS) fail(`Màxim ${MAX_PROPOSALS} propostes`);
+  const others = s.books.filter((b) => b.proposedBy !== participantId);
+  const added: Book[] = [];
+  for (const b of books) {
+    if (findDuplicate(b, [...others, ...added])) fail(`«${b.title}» ja està proposat`);
+    added.push({ ...b, proposedBy: participantId, proposerName: undefined });
+  }
+  // Keep the participant's books where they were, so the rest keep their order.
+  const at = s.books.findIndex((b) => b.proposedBy === participantId);
+  const idx = at === -1 ? others.length : s.books.slice(0, at).filter((b) => b.proposedBy !== participantId).length;
+  return { ...s, books: [...others.slice(0, idx), ...added, ...others.slice(idx)] };
+}
+
+/** Review closed: show the shelf. */
+export function finishReview(s: Session): Session {
+  if (s.phase.kind !== 'review') fail('No som a la revisió de propostes');
+  return { ...s, phase: { kind: 'proposalsDone' } };
 }
 
 /** Name of whoever proposed a book, whether or not they vote. */

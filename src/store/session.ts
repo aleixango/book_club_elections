@@ -33,6 +33,8 @@ interface State {
   endTurn: () => void;
   submitProposals: (books: Book[]) => void;
   restartProposals: () => void;
+  setProposals: (participantId: string, books: Book[]) => void;
+  finishReview: () => void;
   startVoting: () => void;
   castVote: (ids: string[]) => void;
   revealResults: () => void;
@@ -117,6 +119,8 @@ export const useStore = create<State>()(
         endTurn: () => apply(S.endTurn),
         submitProposals: (books) => apply((s) => S.submitProposals(s, books)),
         restartProposals: () => apply(S.restartProposals),
+        setProposals: (id, books) => apply((s) => S.setProposals(s, id, books)),
+        finishReview: () => apply(S.finishReview),
         startVoting: () => apply(S.startVoting),
         castVote: (ids) => apply((s) => S.castVote(s, ids)),
         revealResults: () => apply(S.revealResults),

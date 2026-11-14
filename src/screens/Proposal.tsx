@@ -20,16 +20,21 @@ type SearchState =
   | { kind: 'error'; message: string };
 
 interface Props {
+  /** Session used for duplicate checks: it must not contain the books being edited. */
   session: Session;
-  name: string;
+  /** TopBar subtitle. */
+  sub: string;
+  onSave: (books: Book[]) => void;
+  /** Present when editing outside a secret turn (review): plain save/cancel buttons. */
+  onCancel?: () => void;
+  initial?: Book[];
 }
 
-export function ProposalScreen({ session, name }: Props) {
-  const submit = useStore((s) => s.submitProposals);
+export function ProposalScreen({ session, sub, onSave, onCancel, initial = [] }: Props) {
   const setError = useStore((s) => s.setError);
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState<SearchState>({ kind: 'idle' });
-  const [draft, setDraft] = useState<Book[]>([]);
+  const [draft, setDraft] = useState<Book[]>(initial);
   const [detail, setDetail] = useState<Book | null>(null);
   const [focused, setFocused] = useState(false);
   const [shakeId, setShakeId] = useState<string | null>(null);
@@ -85,7 +90,7 @@ export function ProposalScreen({ session, name }: Props) {
 
   return (
     <Screen className={kb ? 'kb' : ''}>
-      {!kb && <TopBar title="Propostes" sub={`Torn de ${name}`} />}
+      {!kb && <TopBar title="Propostes" sub={sub} />}
       <div className="propose">
         <div className="propose-main">
           <div className="field">
@@ -217,7 +222,7 @@ export function ProposalScreen({ session, name }: Props) {
               })}
             </div>
             <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              Opcional. Ningú veurà qui ha proposat cada llibre fins al final.
+              {onCancel ? 'Toca un llibre per treure’l.' : 'Opcional. Ningú veurà qui ha proposat cada llibre fins al final.'}
             </p>
           </div>
         )}
@@ -225,12 +230,21 @@ export function ProposalScreen({ session, name }: Props) {
 
       {!kb && (
         <div className="footer" style={{ justifyContent: 'flex-end' }}>
-          {draft.length === 0 ? (
-            <HoldButton className="btn btn-ghost btn-lg" onComplete={() => submit([])} hint="mantén premut">
+          {onCancel ? (
+            <>
+              <button className="btn btn-ghost btn-lg" onClick={onCancel}>
+                Cancel·lar
+              </button>
+              <button className="btn btn-gold btn-lg" onClick={() => onSave(draft)}>
+                Desar {draft.length} {draft.length === 1 ? 'llibre' : 'llibres'}
+              </button>
+            </>
+          ) : draft.length === 0 ? (
+            <HoldButton className="btn btn-ghost btn-lg" onComplete={() => onSave([])} hint="mantén premut">
               No proposo res
             </HoldButton>
           ) : (
-            <HoldButton onComplete={() => submit(draft)} hint="mantén premut per desar">
+            <HoldButton onComplete={() => onSave(draft)} hint="mantén premut per desar">
               Proposar {draft.length} {draft.length === 1 ? 'llibre' : 'llibres'}
             </HoldButton>
           )}

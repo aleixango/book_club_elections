@@ -1,5 +1,5 @@
 import { animate, motion, useMotionValue, useTransform } from 'motion/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Outcome, Round, Session } from '../domain/types';
 import { bookById } from '../domain/session';
 import { booksInPlay, ranking, roundLabel } from '../domain/rounds';
@@ -129,7 +129,8 @@ function outcomeCopy(s: Session, round: Round, o: Outcome): { headline: string; 
 export function ResultsScreen({ session, round, outcome }: { session: Session; round: Round; outcome: Outcome }) {
   const next = useStore((s) => s.continueAfterResults);
   const ranked = useMemo(() => ranking(round), [round]);
-  const max = Math.max(1, ...ranked.map((r) => r.votes));
+  // Eliminated books never show their votes, so the bars scale to the books that go on.
+  const max = Math.max(1, ...ranked.filter((r) => statusOf(outcome, r.id) !== 'out').map((r) => r.votes));
   // The row keeps the (shuffled) candidate order so positions give nothing away.
   const row = useMemo(() => round.candidates.map((id) => ({ id, votes: round.tally[id] ?? 0 })), [round]);
   // Reveal order: eliminated books first (fewest votes first, each one falls), then the rest, fewest to most.
@@ -141,7 +142,6 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
   const [revealed, setRevealed] = useState(0);
   const done = revealed >= order.length;
   const eliminating = revealed < outCount;
-  const stripRef = useRef<HTMLDivElement>(null);
   const copy = outcomeCopy(session, round, outcome);
   const isWinner = outcome.type === 'advance' && outcome.passed.length === 1;
 
@@ -165,9 +165,6 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
         sfx.deselect();
         haptic(12);
       } else sfx.tick();
-      // Keep the freshly revealed column visible.
-      const el = stripRef.current?.querySelector<HTMLElement>(`[data-id="${item.id}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }, delay);
     return () => window.clearTimeout(t);
   }, [revealed, done, order, outcome, outCount]);
@@ -179,26 +176,27 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
     <Screen>
       <TopBar title={`Resultats · ${roundLabel(round)}`} sub={`${session.participants.length} votants`} />
       <div className="results-wrap" onClick={() => !done && setRevealed(order.length)}>
-        <div className="podium" ref={stripRef}>
+        <div className="podium" style={{ '--n': row.length } as React.CSSProperties}>
           {row.map((r) => {
             const b = bookById(session, r.id)!;
             const on = isRevealed(r.id);
             const st = statusOf(outcome, r.id);
             const fallen = on && st === 'out';
             return (
+              // Eliminated columns fade out but keep their box, so the others never move.
               <motion.div
                 key={r.id}
-                data-id={r.id}
                 className={`podium-col ${on ? st : 'pending'}`}
-                animate={fallen ? { y: 18, opacity: 0.5, filter: 'grayscale(1)' } : { y: 0, opacity: 1, filter: 'grayscale(0)' }}
-                // Show the count first, then drop.
-                transition={{ duration: 0.6, delay: fallen && !done ? 0.55 : 0 }}
+                animate={{ opacity: fallen ? 0 : 1 }}
+                // Show the "Fora" tag first, then vanish.
+                transition={{ duration: 0.5, delay: fallen && !done ? 0.6 : 0 }}
+                style={{ pointerEvents: fallen ? 'none' : undefined }}
               >
-                <div className="podium-votes">{on ? <Counter to={r.votes} run={on} /> : '·'}</div>
+                <div className="podium-votes">{!on ? '·' : st === 'out' ? '' : <Counter to={r.votes} run={on} />}</div>
                 <motion.div
                   className="podium-cover"
-                  animate={on ? { rotateY: 0, opacity: 1 } : { rotateY: 80, opacity: 0.25 }}
-                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  animate={{ opacity: on ? 1 : 0.3 }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
                 >
                   <BookCover book={b} width="var(--podium-w)" eager />
                   {done && st === 'pass' && isWinner && <span className="crown">♛</span>}
@@ -207,7 +205,7 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
                   <motion.div
                     className="podium-bar"
                     initial={{ height: 0 }}
-                    animate={{ height: on ? `${Math.max(4, (r.votes / max) * 100)}%` : 0 }}
+                    animate={{ height: on && st !== 'out' ? `${Math.max(4, (r.votes / max) * 100)}%` : 0 }}
                     transition={{ type: 'spring', damping: 18, stiffness: 120 }}
                   />
                 </div>
@@ -216,7 +214,7 @@ export function ResultsScreen({ session, round, outcome }: { session: Session; r
                     <motion.span
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: fallen && !done ? 0.55 : 0 }}
+                      transition={{ duration: 0.2 }}
                       className={`tag tag-${st}`}
                     >
                       {st === 'pass' ? (isWinner ? 'Guanya' : 'Passa') : st === 'tie' ? 'Empat' : 'Fora'}

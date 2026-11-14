@@ -71,6 +71,8 @@ export interface RoundLog {
 
 export type Phase =
   | { kind: 'proposals'; turn: Turn }
+  /** Preloaded proposals being reviewed by person before the shelf. */
+  | { kind: 'review' }
   | { kind: 'proposalsDone' }
   | { kind: 'voting'; round: Round; turn: Turn }
   | { kind: 'roundEnd'; round: Round }

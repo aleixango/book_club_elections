@@ -138,14 +138,14 @@ export function SetupScreen({ mode: initialMode, onBack }: { mode: SetupMode; on
       </div>
       <div className="footer" style={{ justifyContent: 'flex-end' }}>
         <span className="muted" style={{ fontSize: 13, marginRight: 'auto' }}>
-          {club ? 'Les propostes ja estan carregades. ' : ''}La llista no es pot canviar un cop comenci.
+          {club ? 'Podreu revisar les propostes al pas següent. ' : ''}La llista no es pot canviar un cop comenci.
         </span>
         <button
           className="btn btn-gold btn-lg"
           disabled={!!err}
           onClick={() => (club ? startWithProposals(names, CLUB_PROPOSALS) : start(names))}
         >
-          {club ? 'Veure les propostes' : 'Començar les propostes'} <IconArrow />
+          {club ? 'Revisar les propostes' : 'Començar les propostes'} <IconArrow />
         </button>
       </div>
     </Screen>
